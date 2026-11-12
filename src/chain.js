@@ -13,6 +13,9 @@ const XL = {
   factory: "0x1f09daefa827f02cbb40967cc91b259763760761",
   // Hardline's own processor. Filled in after the one-time createCPU transaction.
   hardline: { transistors: "", circuits: "" },
+  // Existing TapeOut processor on X Layer (CPU #267, created 2026-10-02, verified by its builder).
+  // The hackathon FAQ allows building on existing processors.
+  shared: { transistors: "0x7e33ea21cc11929b48b339735a61c2d4b8aed708", circuits: "0xe10931e0cfb42c76ced25b4712e7553f24a3d9e9", label: "TapeOut processor #267", shared: true },
 };
 const SEL = {
   createCPU: "47f9b5fd", deployFee: "eb2a5d2c", cpuCount: "a94da8a7", cpuAt: "4bc7cbbd",
@@ -79,6 +82,15 @@ const Chain = {
     return a;
   },
   async balance() { return BigInt(await Chain.rpc("eth_getBalance", [Chain.account, "latest"])); },
+  async publicRpc(method, params) {
+    let last;
+    for (const url of XL.rpc) {
+      try { const r = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }) });
+        const j = await r.json(); if (j.error) { const e = new Error(j.error.message); e.data = j.error.data; e.code = j.error.code; throw e; } return j.result; }
+      catch (e) { last = e; if (e.code != null) throw e; }
+    }
+    throw last || new Error("RPC unreachable");
+  },
   simulate(to, data, value) { return Chain.rpc("eth_call", [{ from: Chain.account, to, data, value: "0x" + BigInt(value).toString(16) }, "latest"]); },
   // simulate -> estimate -> balance check -> send -> wait
   async send(to, data, value, onStatus) {

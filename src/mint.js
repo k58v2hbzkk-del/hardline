@@ -30,12 +30,16 @@
     const pr = proc();
     if (!pr) {
       let fee = null; try { fee = await TapeOut.deployFee(); } catch (e) {}
-      P.innerHTML = `<div class="note"><b>One-time setup:</b> create the Hardline processor on TapeOut. Every Hardline chip will live on it.<br>Protocol fee: <b>${fee == null ? "…" : okb(fee) + " OKB"}</b> + gas.</div>`;
-      B.textContent = "Create Hardline processor"; B.classList.remove("hidden");
-      B.onclick = () => createProcessor(fee);
+      P.innerHTML = `<div class="note"><b>Choose where your chips live.</b><br>Recommended: an existing TapeOut processor on X Layer (#267). The hackathon allows building on existing processors.</div>
+        <button class="btn primary" id="useShared">Use TapeOut processor #267</button>
+        <button class="btn ghost" id="tryOwn" style="margin-top:8px">Try creating our own processor</button>`;
+      $("useShared").onclick = () => { store.set("hl_proc", XL.shared); $("mintLog").innerHTML = ""; render(); };
+      $("tryOwn").onclick = () => createProcessor(fee);
       return;
     }
-    P.innerHTML = `<div class="kv"><span>Processor</span><span><a href="${XL.explorer}/address/${pr.circuits}" target="_blank" rel="noopener">${short(pr.circuits)}</a></span></div>`;
+    P.innerHTML = `<div class="kv"><span>Processor</span><span><a href="${XL.explorer}/address/${pr.circuits}" target="_blank" rel="noopener">${pr.label ? esc(pr.label) : short(pr.circuits)}</a></span></div>
+      <button class="add" id="switchProc" style="margin-top:8px">Change processor</button>`;
+    $("switchProc").onclick = () => { try { localStorage.removeItem("hl_proc"); } catch (e) {} render(); };
     const S = window.HL.get();
     if (!S.compiled || !S.proof || !S.proof.ok) { C.innerHTML = `<div class="note">Fix the rule first. Only proven chips can be minted.</div>`; return; }
     try {
@@ -49,7 +53,7 @@
         <span><b>Total</b></span><span><b>${okb(total)} OKB</b> + gas</span></div>`;
       B.textContent = `Mint this chip · ${okb(total)} OKB`; B.classList.remove("hidden");
       B.onclick = () => mintChip({ pr, price, pfee, tfee, need });
-    } catch (e) { err(e); }
+    } catch (e) { log("⛔ Couldn't read this processor's prices: " + esc(errText(e)), "bad"); }
   }
 
   async function renderProcReadonly(P) {
@@ -73,7 +77,12 @@
       for (const o of options) {
         const data = TapeOut.createCpuData("Hardline", "HLINE", story, o.supply, o.price);
         try { sim = await Chain.simulate(XL.factory, data, fee); pick = { ...o, data }; break; }
-        catch (e) { fails.push(`${o.supply} / ${okb(o.price)} OKB → ${errText(e)}`); }
+        catch (e) {
+          let pub = "";
+          try { await Chain.publicRpc("eth_call", [{ from: Chain.account, to: XL.factory, data, value: "0x" + BigInt(fee).toString(16) }, "latest"]); pub = " · public RPC: OK (wallet issue)"; }
+          catch (e2) { pub = " · public RPC: " + errText(e2); }
+          fails.push(`${o.supply} / ${okb(o.price)} OKB → ${errText(e)}${pub}`);
+        }
       }
       if (!pick) { st.innerHTML = "⛔ TapeOut refused every setup. Send this to Claude:<br>" + fails.map(esc).join("<br>") + `<br>fee: ${fee} wei`; throw new Error("No setup accepted"); }
       st.innerHTML = `✅ TapeOut accepts: supply ${pick.supply.toLocaleString()}, ${okb(pick.price)} OKB per gate`;

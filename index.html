@@ -384,6 +384,9 @@ const XL = {
   factory: "0x1f09daefa827f02cbb40967cc91b259763760761",
   // Hardline's own processor. Filled in after the one-time createCPU transaction.
   hardline: { transistors: "", circuits: "" },
+  // Existing TapeOut processor on X Layer (CPU #267, created 2026-10-02, verified by its builder).
+  // The hackathon FAQ allows building on existing processors.
+  shared: { transistors: "0x7e33ea21cc11929b48b339735a61c2d4b8aed708", circuits: "0xe10931e0cfb42c76ced25b4712e7553f24a3d9e9", label: "TapeOut processor #267", shared: true },
 };
 const SEL = {
   createCPU: "47f9b5fd", deployFee: "eb2a5d2c", cpuCount: "a94da8a7", cpuAt: "4bc7cbbd",
@@ -450,6 +453,15 @@ const Chain = {
     return a;
   },
   async balance() { return BigInt(await Chain.rpc("eth_getBalance", [Chain.account, "latest"])); },
+  async publicRpc(method, params) {
+    let last;
+    for (const url of XL.rpc) {
+      try { const r = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }) });
+        const j = await r.json(); if (j.error) { const e = new Error(j.error.message); e.data = j.error.data; e.code = j.error.code; throw e; } return j.result; }
+      catch (e) { last = e; if (e.code != null) throw e; }
+    }
+    throw last || new Error("RPC unreachable");
+  },
   simulate(to, data, value) { return Chain.rpc("eth_call", [{ from: Chain.account, to, data, value: "0x" + BigInt(value).toString(16) }, "latest"]); },
   // simulate -> estimate -> balance check -> send -> wait
   async send(to, data, value, onStatus) {
@@ -755,12 +767,16 @@ if (typeof module !== "undefined") module.exports = { XL, SEL, Abi, okb, errText
     const pr = proc();
     if (!pr) {
       let fee = null; try { fee = await TapeOut.deployFee(); } catch (e) {}
-      P.innerHTML = `<div class="note"><b>One-time setup:</b> create the Hardline processor on TapeOut. Every Hardline chip will live on it.<br>Protocol fee: <b>${fee == null ? "…" : okb(fee) + " OKB"}</b> + gas.</div>`;
-      B.textContent = "Create Hardline processor"; B.classList.remove("hidden");
-      B.onclick = () => createProcessor(fee);
+      P.innerHTML = `<div class="note"><b>Choose where your chips live.</b><br>Recommended: an existing TapeOut processor on X Layer (#267). The hackathon allows building on existing processors.</div>
+        <button class="btn primary" id="useShared">Use TapeOut processor #267</button>
+        <button class="btn ghost" id="tryOwn" style="margin-top:8px">Try creating our own processor</button>`;
+      $("useShared").onclick = () => { store.set("hl_proc", XL.shared); $("mintLog").innerHTML = ""; render(); };
+      $("tryOwn").onclick = () => createProcessor(fee);
       return;
     }
-    P.innerHTML = `<div class="kv"><span>Processor</span><span><a href="${XL.explorer}/address/${pr.circuits}" target="_blank" rel="noopener">${short(pr.circuits)}</a></span></div>`;
+    P.innerHTML = `<div class="kv"><span>Processor</span><span><a href="${XL.explorer}/address/${pr.circuits}" target="_blank" rel="noopener">${pr.label ? esc(pr.label) : short(pr.circuits)}</a></span></div>
+      <button class="add" id="switchProc" style="margin-top:8px">Change processor</button>`;
+    $("switchProc").onclick = () => { try { localStorage.removeItem("hl_proc"); } catch (e) {} render(); };
     const S = window.HL.get();
     if (!S.compiled || !S.proof || !S.proof.ok) { C.innerHTML = `<div class="note">Fix the rule first. Only proven chips can be minted.</div>`; return; }
     try {
@@ -774,7 +790,7 @@ if (typeof module !== "undefined") module.exports = { XL, SEL, Abi, okb, errText
         <span><b>Total</b></span><span><b>${okb(total)} OKB</b> + gas</span></div>`;
       B.textContent = `Mint this chip · ${okb(total)} OKB`; B.classList.remove("hidden");
       B.onclick = () => mintChip({ pr, price, pfee, tfee, need });
-    } catch (e) { err(e); }
+    } catch (e) { log("⛔ Couldn't read this processor's prices: " + esc(errText(e)), "bad"); }
   }
 
   async function renderProcReadonly(P) {
@@ -798,7 +814,12 @@ if (typeof module !== "undefined") module.exports = { XL, SEL, Abi, okb, errText
       for (const o of options) {
         const data = TapeOut.createCpuData("Hardline", "HLINE", story, o.supply, o.price);
         try { sim = await Chain.simulate(XL.factory, data, fee); pick = { ...o, data }; break; }
-        catch (e) { fails.push(`${o.supply} / ${okb(o.price)} OKB → ${errText(e)}`); }
+        catch (e) {
+          let pub = "";
+          try { await Chain.publicRpc("eth_call", [{ from: Chain.account, to: XL.factory, data, value: "0x" + BigInt(fee).toString(16) }, "latest"]); pub = " · public RPC: OK (wallet issue)"; }
+          catch (e2) { pub = " · public RPC: " + errText(e2); }
+          fails.push(`${o.supply} / ${okb(o.price)} OKB → ${errText(e)}${pub}`);
+        }
       }
       if (!pick) { st.innerHTML = "⛔ TapeOut refused every setup. Send this to Claude:<br>" + fails.map(esc).join("<br>") + `<br>fee: ${fee} wei`; throw new Error("No setup accepted"); }
       st.innerHTML = `✅ TapeOut accepts: supply ${pick.supply.toLocaleString()}, ${okb(pick.price)} OKB per gate`;
