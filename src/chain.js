@@ -40,7 +40,12 @@ const Abi = {
   address(ret, i = 0) { return "0x" + ret.slice(2 + i * 64 + 24, 2 + (i + 1) * 64); },
   bytes(ret) { const off = Number(Abi.uint(ret, 0)) * 2, len = Number(BigInt("0x" + ret.slice(2 + off, 2 + off + 64))); return "0x" + ret.slice(2 + off + 64, 2 + off + 64 + len * 2); },
 };
-const okb = (wei) => { wei = BigInt(wei); const s = (wei % 10n ** 18n).toString().padStart(18, "0").replace(/0+$/, ""); return (wei / 10n ** 18n).toString() + (s ? "." + s.slice(0, 8) : ""); };
+const okb = (wei) => { wei = BigInt(wei); if (wei > 0n && wei < 10n ** 10n) return wei.toString() + " wei"; const s = (wei % 10n ** 18n).toString().padStart(18, "0").replace(/0+$/, ""); return (wei / 10n ** 18n).toString() + (s ? "." + s.slice(0, 8).replace(/0+$/, "") : ""); };
+const errText = (e) => {
+  if (!e) return "Unknown error";
+  const parts = [e.message, e.reason, e.data && (typeof e.data === "string" ? e.data : e.data.message || e.data.data), e.error && e.error.message, e.code != null && "code " + e.code];
+  return parts.filter(Boolean).join(" · ") || String(e);
+};
 
 const Chain = {
   provider: () => window.ethereum || window.okxwallet || null,
@@ -74,6 +79,7 @@ const Chain = {
     return a;
   },
   async balance() { return BigInt(await Chain.rpc("eth_getBalance", [Chain.account, "latest"])); },
+  simulate(to, data, value) { return Chain.rpc("eth_call", [{ from: Chain.account, to, data, value: "0x" + BigInt(value).toString(16) }, "latest"]); },
   // simulate -> estimate -> balance check -> send -> wait
   async send(to, data, value, onStatus) {
     const from = Chain.account, v = "0x" + BigInt(value).toString(16);
@@ -114,4 +120,4 @@ const TapeOut = {
   },
 };
 
-if (typeof module !== "undefined") module.exports = { XL, SEL, Abi, okb, TapeOut };
+if (typeof module !== "undefined") module.exports = { XL, SEL, Abi, okb, errText, TapeOut };

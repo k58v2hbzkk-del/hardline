@@ -411,7 +411,12 @@ const Abi = {
   address(ret, i = 0) { return "0x" + ret.slice(2 + i * 64 + 24, 2 + (i + 1) * 64); },
   bytes(ret) { const off = Number(Abi.uint(ret, 0)) * 2, len = Number(BigInt("0x" + ret.slice(2 + off, 2 + off + 64))); return "0x" + ret.slice(2 + off + 64, 2 + off + 64 + len * 2); },
 };
-const okb = (wei) => { wei = BigInt(wei); const s = (wei % 10n ** 18n).toString().padStart(18, "0").replace(/0+$/, ""); return (wei / 10n ** 18n).toString() + (s ? "." + s.slice(0, 8) : ""); };
+const okb = (wei) => { wei = BigInt(wei); if (wei > 0n && wei < 10n ** 10n) return wei.toString() + " wei"; const s = (wei % 10n ** 18n).toString().padStart(18, "0").replace(/0+$/, ""); return (wei / 10n ** 18n).toString() + (s ? "." + s.slice(0, 8).replace(/0+$/, "") : ""); };
+const errText = (e) => {
+  if (!e) return "Unknown error";
+  const parts = [e.message, e.reason, e.data && (typeof e.data === "string" ? e.data : e.data.message || e.data.data), e.error && e.error.message, e.code != null && "code " + e.code];
+  return parts.filter(Boolean).join(" · ") || String(e);
+};
 
 const Chain = {
   provider: () => window.ethereum || window.okxwallet || null,
@@ -445,6 +450,7 @@ const Chain = {
     return a;
   },
   async balance() { return BigInt(await Chain.rpc("eth_getBalance", [Chain.account, "latest"])); },
+  simulate(to, data, value) { return Chain.rpc("eth_call", [{ from: Chain.account, to, data, value: "0x" + BigInt(value).toString(16) }, "latest"]); },
   // simulate -> estimate -> balance check -> send -> wait
   async send(to, data, value, onStatus) {
     const from = Chain.account, v = "0x" + BigInt(value).toString(16);
@@ -485,7 +491,7 @@ const TapeOut = {
   },
 };
 
-if (typeof module !== "undefined") module.exports = { XL, SEL, Abi, okb, TapeOut };
+if (typeof module !== "undefined") module.exports = { XL, SEL, Abi, okb, errText, TapeOut };
 
 </script>
 <script>
@@ -728,7 +734,7 @@ if (typeof module !== "undefined") module.exports = { XL, SEL, Abi, okb, TapeOut
   let busy = false;
 
   function log(html, cls = "") { const d = document.createElement("div"); d.className = "lg " + cls; d.innerHTML = html; $("mintLog").appendChild(d); $("mintLog").classList.remove("hidden"); return d; }
-  function err(e) { const m = e && (e.message || e.data?.message) || String(e); log("⛔ " + esc(m.replace(/^execution reverted:?\s*/i, "Contract refused: ")), "bad"); }
+  function err(e) { log("⛔ " + esc(errText(e)), "bad"); }
 
   async function render() {
     const W = $("walletBox"), P = $("procBox"), C = $("costBox"), B = $("mintBtn");
@@ -780,14 +786,28 @@ if (typeof module !== "undefined") module.exports = { XL, SEL, Abi, okb, TapeOut
     if (busy) return; busy = true; $("mintLog").innerHTML = "";
     try {
       if (fee == null) fee = await TapeOut.deployFee();
-      const story = "Hardline: rules hardwired into chips nobody can change. Each chip is a rule compiled to NAND gates and proven for every input before tape-out. hardline by @Tajudeen.";
-      const data = TapeOut.createCpuData("Hardline", "HLINE", story, 1000000, 0);
-      const st = log("Creating processor…");
-      const { hash, sim } = await Chain.send(XL.factory, data, fee, (s, h) => (st.innerHTML = esc(s) + (h ? " " + txLink(h) : "")));
-      const pr = { transistors: Abi.address(sim, 0), circuits: Abi.address(sim, 1), tx: hash };
+      const story = "Hardline: rules hardwired into chips nobody can change. Each chip is a rule compiled to NAND gates and proven for every input before tape-out. By @Tajudeen.";
+      // Known-good mainnet setup first (210000 supply, 0.000066 OKB per gate), then fallbacks.
+      const options = [
+        { supply: 210000, price: 66000000000000n },
+        { supply: 210000, price: 0n },
+        { supply: 21000, price: 66000000000000n },
+      ];
+      const st = log(`Testing processor setups with TapeOut (fee ${okb(fee)} OKB)…`);
+      let pick = null, sim = null; const fails = [];
+      for (const o of options) {
+        const data = TapeOut.createCpuData("Hardline", "HLINE", story, o.supply, o.price);
+        try { sim = await Chain.simulate(XL.factory, data, fee); pick = { ...o, data }; break; }
+        catch (e) { fails.push(`${o.supply} / ${okb(o.price)} OKB → ${errText(e)}`); }
+      }
+      if (!pick) { st.innerHTML = "⛔ TapeOut refused every setup. Send this to Claude:<br>" + fails.map(esc).join("<br>") + `<br>fee: ${fee} wei`; throw new Error("No setup accepted"); }
+      st.innerHTML = `✅ TapeOut accepts: supply ${pick.supply.toLocaleString()}, ${okb(pick.price)} OKB per gate`;
+      const st2 = log("Creating processor…");
+      const r = await Chain.send(XL.factory, pick.data, fee, (s, h) => (st2.innerHTML = esc(s) + (h ? " " + txLink(h) : "")));
+      const pr = { transistors: Abi.address(r.sim, 0), circuits: Abi.address(r.sim, 1), tx: r.hash };
       store.set("hl_proc", pr);
-      st.innerHTML = `✅ Hardline processor created ${txLink(hash)}<br><span class="muted">Circuits ${esc(pr.circuits)}<br>Transistors ${esc(pr.transistors)}</span><br><b>Send these two addresses to Claude to lock them in.</b>`;
-    } catch (e) { err(e); }
+      st2.innerHTML = `✅ Hardline processor created ${txLink(r.hash)}<br><span class="muted">Circuits ${esc(pr.circuits)}<br>Transistors ${esc(pr.transistors)}</span><br><b>Screenshot this and send it to Claude.</b>`;
+    } catch (e) { if (!/No setup accepted/.test(e.message || "")) err(e); }
     busy = false; render();
   }
 
