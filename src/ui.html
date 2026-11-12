@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hardline</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,400;0,600;0,700;0,800;0,900;1,500&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#000;--ink:#fff;--muted:#8a8a8a;--line:#262626;--card:#0d0d0d;--card2:#141414;--allow:#B8F94A;--deny:#FF5A4E;--soft:#1a1a1a}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Inter Tight",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.07;z-index:0;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence baseFrequency='.9' numOctaves='2'/></filter><rect width='120' height='120' filter='url(%23n)'/></svg>")}
+  .wrap{max-width:640px;margin:0 auto;padding:0 16px 56px;position:relative;z-index:1}
+  nav{position:sticky;top:0;z-index:5;display:flex;justify-content:space-between;align-items:center;padding:14px 0;background:rgba(0,0,0,.82);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line);margin:0 -16px;padding-left:16px;padding-right:16px}
+  .logo{font-size:22px;font-weight:800;letter-spacing:-.6px;display:flex;align-items:center;gap:9px}
+  .logo i{display:inline-block;width:20px;height:20px;border-radius:5px;border:2px solid #fff;position:relative}
+  .logo i:after{content:"";position:absolute;left:2px;right:2px;top:6px;height:4px;background:var(--allow);border-radius:2px;animation:blink 2.4s infinite}
+  @keyframes blink{0%,70%,100%{opacity:1}80%{opacity:.25}}
+  .cta{background:var(--allow);color:#000;font-weight:800;font-size:13.5px;border-radius:12px;padding:10px 14px;border:none;font-family:inherit}
+  .hero{position:relative;padding:34px 0 26px}
+  .heroart{position:relative;height:220px;margin:0 -16px;overflow:hidden}
+  .heroart svg{width:100%;height:100%;display:block}
+  .flow{stroke-dasharray:14 220;animation:flow 3.2s linear infinite}
+  @keyframes flow{from{stroke-dashoffset:234}to{stroke-dashoffset:0}}
+  .chipglow{animation:glow 2.6s ease-in-out infinite}
+  @keyframes glow{0%,100%{opacity:.35}50%{opacity:.9}}
+  .brk{position:absolute;width:44px;height:28px;border-color:#bdbdbd;border-style:solid}
+  .brk.l{left:16px;bottom:0;border-width:0 0 1.5px 1.5px}.brk.r{right:16px;bottom:0;border-width:0 1.5px 1.5px 0}
+  .tag{display:inline-block;font-size:12.5px;font-weight:600;background:#1c1c1c;color:#e6e6e6;border-radius:8px;padding:6px 10px}
+  .hero h1{font-size:40px;line-height:1.02;letter-spacing:-1.6px;margin:14px 0 12px;font-weight:800}
+  .hero h1 em{font-style:italic;font-weight:500;color:var(--allow)}
+  .hero p{margin:0;color:#a3a3a3;font-size:16px;line-height:1.55}
+  .steps{display:flex;gap:6px;margin-top:16px;flex-wrap:wrap}
+  .steps span{font-size:12px;font-weight:700;border:1px solid #333;border-radius:999px;padding:6px 10px;color:#ddd}
+  .steps span b{color:var(--allow);margin-right:4px}
+  .marq{overflow:hidden;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin:22px -16px 0;white-space:nowrap}
+  .marq div{display:inline-block;padding:11px 0;animation:marq 28s linear infinite;font-size:13px;font-weight:700;color:#777;letter-spacing:.04em}
+  .marq span{margin:0 18px}.marq b{color:var(--allow)}
+  @keyframes marq{to{transform:translateX(-50%)}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:18px;margin-top:16px;position:relative}
+  .ch{display:flex;justify-content:space-between;align-items:flex-end;margin:6px 0 12px}
+  .ch h2{margin:0;font-size:26px;letter-spacing:-.8px;font-weight:800}
+  .ch small{color:var(--muted);font-size:12.5px;font-weight:600}
+  .hint{margin:0 0 12px;font-size:14px;color:var(--muted);line-height:1.5}
+  .tpl{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+  .tpl::-webkit-scrollbar{display:none}
+  .tpl button{flex:0 0 auto;border:1px solid #2e2e2e;background:var(--card2);color:#fff;border-radius:18px;padding:14px;font-weight:700;font-size:15px;cursor:pointer;font-family:inherit;text-align:left;min-width:170px;transition:border-color .2s,transform .2s}
+  .tpl button small{display:block;font-weight:500;color:var(--muted);font-size:12.5px;margin-top:4px}
+  .tpl button.cur{border-color:var(--allow);box-shadow:0 0 0 1px var(--allow) inset}
+  .tpl button:active{transform:scale(.97)}
+  .cond{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+  .cond .ix{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px;color:var(--allow);width:28px;flex:0 0 auto}
+  input[type=text],select,input[type=number]{font-family:inherit;font-size:15px;border:1px solid #2e2e2e;border-radius:12px;padding:11px;background:#111;color:#fff;min-width:0}
+  input:focus,select:focus{outline:none;border-color:var(--allow)}
+  input[type=text]{flex:1}
+  input[type=number]{width:60px}
+  select{font-weight:600}
+  .x{width:42px;height:42px;border-radius:12px;border:1px solid #2e2e2e;background:#111;font-size:18px;cursor:pointer;flex:0 0 auto;color:#888}
+  .add{border:1px dashed #3a3a3a;background:transparent;border-radius:12px;padding:10px 12px;font-weight:700;font-size:13.5px;cursor:pointer;font-family:inherit;color:#ddd}
+  .grp{border-left:2px solid var(--allow);padding:8px 0 8px 12px;margin:6px 0}
+  .grp .grp{border-left-color:#3a3a3a}
+  .gh{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+  .gh .lbl{font-weight:700;font-size:13px;color:var(--muted)}
+  .leaf{display:flex;gap:6px;align-items:center;margin:6px 0}
+  .leaf select:first-child{flex:1;min-width:0}
+  .leaf select:nth-child(2){width:104px;flex:0 0 auto}
+  .gh select{flex:1;min-width:0}
+  .gh .x{margin-left:0!important}
+  .gbtns{display:flex;gap:6px;margin-top:6px}
+  .readout{margin-top:12px;background:#111;border:1px solid var(--line);border-radius:14px;padding:13px;font-size:14px;line-height:1.55;color:#cfcfcf}
+  .readout b{color:var(--allow)}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .stat{background:#111;border:1px solid var(--line);border-radius:16px;padding:12px}
+  .stat b{display:block;font-size:26px;letter-spacing:-.8px;font-weight:800}
+  .stat span{font-size:11.5px;color:var(--muted);font-weight:600}
+  .proof{margin-top:10px;border-radius:16px;padding:13px;font-weight:700;font-size:15px;display:flex;gap:10px;align-items:center}
+  .proof.ok{background:rgba(184,249,74,.08);border:1px solid rgba(184,249,74,.45)}
+  .proof.bad{background:rgba(255,90,78,.08);border:1px solid rgba(255,90,78,.5)}
+  .proof small{display:block;font-weight:500;color:#9a9a9a;font-size:12.5px;margin-top:3px;line-height:1.45}
+  .scan{height:3px;border-radius:2px;background:#1c1c1c;margin-top:10px;overflow:hidden}
+  .scan i{display:block;height:100%;width:0;background:var(--allow);transition:width .6s cubic-bezier(.2,.8,.2,1)}
+  details{margin-top:12px}
+  summary{font-weight:700;font-size:13.5px;cursor:pointer;color:var(--muted)}
+  .mono{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11.5px;word-break:break-all;background:#111;border:1px solid var(--line);border-radius:12px;padding:11px;margin:8px 0;line-height:1.55;color:#cfcfcf}
+  .toggles{display:flex;flex-direction:column;gap:8px}
+  .tg{display:flex;justify-content:space-between;align-items:center;border:1px solid #2a2a2a;background:#111;border-radius:14px;padding:11px 13px;cursor:pointer;user-select:none;transition:border-color .2s}
+  .tg.on{border-color:#3d5517}
+  .tg span{font-weight:600;font-size:14.5px}
+  .sw{width:46px;height:27px;border-radius:14px;background:#2a2a2a;position:relative;transition:.2s;flex:0 0 auto}
+  .sw:after{content:"";position:absolute;left:3px;top:3px;width:21px;height:21px;border-radius:50%;background:#777;transition:.2s}
+  .tg.on .sw{background:var(--allow)}
+  .tg.on .sw:after{left:22px;background:#000}
+  .verdict{margin-top:14px;border-radius:18px;padding:18px;text-align:center;font-size:30px;font-weight:800;letter-spacing:-.8px}
+  .verdict.allow{background:var(--allow);color:#000}
+  .verdict.deny{background:#1a0d0c;color:var(--deny);border:1px solid rgba(255,90,78,.5)}
+  .verdict.pop{animation:pop .35s ease-out}
+  @keyframes pop{0%{transform:scale(.96)}60%{transform:scale(1.02)}100%{transform:scale(1)}}
+  .verdict small{display:block;font-size:12px;font-weight:600;opacity:.7;letter-spacing:0;margin-top:3px}
+  .btn{width:100%;height:54px;border:none;border-radius:15px;font-weight:800;font-size:16px;font-family:inherit;cursor:pointer}
+  .btn.primary{background:var(--allow);color:#000}
+  .btn.ghost{background:#111;border:1px solid #2e2e2e;color:#fff}
+  .btn:disabled{opacity:.5}
+  .soon{font-size:10.5px;font-weight:800;background:#000;color:var(--allow);border-radius:999px;padding:3px 8px;margin-left:6px;vertical-align:2px}
+  ol.how{margin:6px 0 14px;padding-left:20px;font-size:14.5px;line-height:1.6;color:#bdbdbd}
+  code{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:12.5px;color:var(--allow)}
+  .reveal{opacity:0;transform:translateY(22px);transition:opacity .7s ease,transform .7s cubic-bezier(.2,.8,.2,1)}
+  .reveal.in{opacity:1;transform:none}
+  .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(140px);background:var(--allow);color:#000;padding:12px 18px;border-radius:14px;font-weight:800;transition:transform .3s;z-index:9}
+  .toast.show{transform:translateX(-50%) translateY(0)}
+  footer{margin-top:30px;display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted)}
+  footer b{color:#fff}
+  .hidden{display:none!important}
+  .note{background:#111;border:1px solid var(--line);border-radius:14px;padding:12px;font-size:14px;line-height:1.5;color:#cfcfcf;margin-bottom:10px}
+  .note b{color:#fff}
+  .kv{display:grid;grid-template-columns:1fr auto;gap:7px 12px;font-size:14px;background:#111;border:1px solid var(--line);border-radius:14px;padding:12px;margin-top:10px}
+  .kv span:nth-child(odd){color:var(--muted)}
+  .row{display:flex;gap:8px;align-items:center;font-size:14px;flex-wrap:wrap}
+  .muted{color:var(--muted)}
+  .dotlive{width:9px;height:9px;border-radius:50%;background:var(--allow);box-shadow:0 0 0 4px rgba(184,249,74,.18)}
+  a{color:var(--allow)}
+  .lg{padding:4px 0;font-family:"Inter Tight",sans-serif;font-size:13.5px;line-height:1.5}
+  .lg.bad{color:var(--deny)}
+  .chipRow{display:flex;gap:10px;align-items:center;justify-content:space-between;border:1px solid var(--line);background:#111;border-radius:12px;padding:10px 12px;margin-top:8px;font-size:13.5px;flex-wrap:wrap}
+  .liveAns{margin-top:10px;font-weight:700;font-size:14.5px;text-align:center}
+  #askLive{margin-top:10px}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.reveal{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav><div class="logo"><i></i>Hardline</div><button class="cta" onclick="document.getElementById('build').scrollIntoView({behavior:'smooth'})">Build a chip</button></nav>
+
+  <div class="heroart" aria-hidden="true">
+    <svg viewBox="0 0 400 220" preserveAspectRatio="xMidYMid slice" id="heroSvg"></svg>
+    <span class="brk l"></span><span class="brk r"></span>
+  </div>
+
+  <div class="hero">
+    <span class="tag">Overview</span>
+    <h1>Rules <em>hardwired</em> into chips nobody can change.</h1>
+    <p>Write a rule. Hardline compiles it into a real logic chip, proves it's correct for every possible case, and mints it on X Layer through TapeOut. Any contract, vault or AI agent can then ask the chip "is this allowed?", and that answer can never be quietly edited.</p>
+    <div class="steps"><span><b>01</b>Write</span><span><b>02</b>Compile</span><span><b>03</b>Prove</span><span><b>04</b>Mint</span><span><b>05</b>Plug in</span></div>
+  </div>
+  <div class="marq"><div id="marq"></div></div>
+
+  <span id="build"></span>
+<div class="card">
+    <span class="tag">Templates</span><div class="ch"><h2>Start fast</h2><small>or build your own</small></div>
+    <div class="tpl" id="tpl"></div>
+  </div>
+
+  <div class="card">
+    <span class="tag">Step 01</span><div class="ch"><h2>Conditions</h2><small id="condCount"></small></div>
+    <p class="hint">Yes/no facts your app gives the chip, e.g. "Signer 1 approved".</p>
+    <div id="conds"></div>
+    <button class="add" id="addCond">+ Add condition</button>
+  </div>
+
+  <div class="card">
+    <span class="tag">Step 02</span><div class="ch"><h2>Rule</h2><small>when is it allowed?</small></div>
+    <div id="rule"></div>
+    <div class="readout" id="readout"></div>
+  </div>
+
+  <div class="card">
+    <span class="tag">Step 03</span><div class="ch"><h2>Chip</h2><small>compiled + proven</small></div>
+    <div class="stats">
+      <div class="stat"><b id="sGates">0</b><span>logic gates</span></div>
+      <div class="stat"><b id="sBytes">0</b><span>bytes onchain</span></div>
+      <div class="stat"><b id="sCases">0</b><span>cases proven</span></div>
+    </div>
+    <div class="proof" id="proof"></div><div class="scan"><i id="scanBar"></i></div>
+    <details><summary>Chip netlist (TapeOut format)</summary>
+      <div class="mono" id="hex"></div>
+      <button class="btn ghost" id="copyHex">Copy netlist</button>
+    </details>
+  </div>
+
+  <div class="card">
+    <span class="tag">Step 04</span><div class="ch"><h2>Test it</h2><small>flip the facts</small></div>
+    <div class="toggles" id="toggles"></div>
+    <div class="verdict" id="verdict"></div>
+    <div class="mono" id="call"></div>
+    <button class="btn ghost hidden" id="askLive">Ask the live chip on X Layer</button>
+    <div class="liveAns hidden" id="liveAns"></div>
+  </div>
+
+  <div class="card" id="mintCard">
+    <span class="tag">Step 05</span><div class="ch"><h2>Mint on X Layer</h2><small>permanent</small></div>
+    <p class="hint">Your proven chip is taped out through TapeOut on X Layer. After that nobody can edit it, including you. Any contract calls <code>eval(chipId, facts)</code> and gets ALLOW or DENY.</p>
+    <div id="walletBox"></div>
+    <div id="procBox"></div>
+    <div id="costBox"></div>
+    <button class="btn primary hidden" id="mintBtn" style="margin-top:12px"></button>
+    <div class="mono hidden" id="mintLog"></div>
+    <div id="myChips"></div>
+  </div>
+
+  <footer><span>Built on <b>TapeOut</b> · <b>X Layer</b></span><span>by <b>Tajudeen</b> · @Tajudeen</span></footer>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/*COMPILER*/
+</script>
+<script>
+/*CHAIN*/
+</script>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const store = { get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+                  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
+  const V = (i, neg = false) => ({ op: "var", v: i, neg });
+  const TEMPLATES = [
+    { id: "treasury", name: "Treasury 3-of-5", sub: "team multisig + freeze",
+      names: ["Signer 1 approved", "Signer 2 approved", "Signer 3 approved", "Signer 4 approved", "Signer 5 approved", "Treasury is frozen"],
+      rule: { op: "all", kids: [{ op: "atleast", k: 3, kids: [V(0), V(1), V(2), V(3), V(4)] }, V(5, true)] } },
+    { id: "agent", name: "AI agent spend guard", sub: "limits an AI wallet",
+      names: ["Amount under daily limit", "Recipient on allowlist", "Human approved", "Emergency stop is on"],
+      rule: { op: "all", kids: [V(3, true), { op: "any", kids: [{ op: "all", kids: [V(0), V(1)] }, V(2)] }] } },
+    { id: "vault", name: "Time-locked vault", sub: "unlock date + recovery",
+      names: ["Unlock date reached", "Owner signed", "Guardian signed", "Recovery mode is on"],
+      rule: { op: "any", kids: [{ op: "all", kids: [V(0), V(1)] }, { op: "all", kids: [V(3), V(2)] }] } },
+    { id: "game", name: "Game move rule", sub: "fair-play logic",
+      names: ["Player has energy", "Player is frozen", "Move is on cooldown", "Player has power-up"],
+      rule: { op: "all", kids: [V(0), V(1, true), { op: "any", kids: [V(2, true), V(3)] }] } },
+  ];
+  let state = store.get("hl_state", null) || { tpl: "treasury", names: TEMPLATES[0].names.slice(), rule: JSON.parse(JSON.stringify(TEMPLATES[0].rule)) };
+  let facts = state.names.map(() => 0);
+  let compiled = null, lastProof = null;
+  window.HL = { get: () => ({ compiled, state, facts, proof: lastProof }), onUpdate: () => {} };
+
+  function toast(t) { const e = $("toast"); e.textContent = t; e.classList.add("show"); clearTimeout(toast.t); toast.t = setTimeout(() => e.classList.remove("show"), 2000); }
+  function copy(t, m) { (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast(m), () => toast("Long-press to copy")); }
+
+  /* templates */
+  function renderTpl() {
+    $("tpl").innerHTML = "";
+    TEMPLATES.forEach((t) => {
+      const b = document.createElement("button");
+      b.className = state.tpl === t.id ? "cur" : "";
+      b.innerHTML = `${t.name}<small>${t.sub}</small>`;
+      b.onclick = () => { state = { tpl: t.id, names: t.names.slice(), rule: JSON.parse(JSON.stringify(t.rule)) }; facts = state.names.map(() => 0); renderAll(); };
+      $("tpl").appendChild(b);
+    });
+  }
+
+  /* conditions */
+  function renderConds() {
+    const box = $("conds"); box.innerHTML = "";
+    state.names.forEach((n, i) => {
+      const row = document.createElement("div"); row.className = "cond";
+      row.innerHTML = `<span class="ix">#${i + 1}</span>`;
+      const inp = document.createElement("input"); inp.type = "text"; inp.value = n; inp.maxLength = 40;
+      inp.oninput = () => { state.names[i] = inp.value || "Condition " + (i + 1); markCustom(); renderRule(); renderTest(); refresh(false); };
+      const x = document.createElement("button"); x.className = "x"; x.textContent = "×"; x.title = "Remove";
+      x.onclick = () => removeCond(i);
+      row.append(inp, x); box.appendChild(row);
+    });
+    $("condCount").textContent = state.names.length + " / 16";
+    $("addCond").style.display = state.names.length >= 16 ? "none" : "";
+  }
+  $("addCond").onclick = () => { state.names.push("Condition " + (state.names.length + 1)); facts.push(0); markCustom(); renderAll(); };
+  function removeCond(i) {
+    if (state.names.length <= 1) return toast("A rule needs at least one condition");
+    state.names.splice(i, 1); facts.splice(i, 1);
+    const fix = (node) => {
+      if (node.op === "var") return node.v === i ? null : (node.v > i && node.v--, node);
+      node.kids = node.kids.map(fix).filter(Boolean);
+      if (node.op === "atleast") node.k = Math.min(node.k, node.kids.length);
+      return node;
+    };
+    state.rule = fix(state.rule) || { op: "all", kids: [] };
+    if (state.rule.op === "var") state.rule = { op: "all", kids: [state.rule] };
+    markCustom(); renderAll();
+  }
+  function markCustom() { state.tpl = "custom"; renderTpl(); }
+
+  /* rule editor */
+  const OPS = [["all", "ALL of these"], ["any", "ANY of these"], ["atleast", "AT LEAST"], ["none", "NONE of these"]];
+  function renderRule() { const box = $("rule"); box.innerHTML = ""; box.appendChild(groupEl(state.rule, null)); }
+  function groupEl(node, parent) {
+    const g = document.createElement("div"); g.className = "grp";
+    const h = document.createElement("div"); h.className = "gh";
+    const sel = document.createElement("select");
+    OPS.forEach(([v, t]) => { const o = document.createElement("option"); o.value = v; o.textContent = t; sel.appendChild(o); });
+    sel.value = node.op;
+    sel.onchange = () => { node.op = sel.value; if (node.op === "atleast") node.k = Math.max(1, Math.min(node.k || 2, node.kids.length || 1)); changed(); };
+    h.appendChild(sel);
+    if (node.op === "atleast") {
+      const k = document.createElement("input"); k.type = "number"; k.min = 0; k.max = node.kids.length; k.value = node.k; k.inputMode = "numeric";
+      k.onchange = () => { node.k = Math.max(0, Math.min(node.kids.length, parseInt(k.value || "0", 10))); changed(); };
+      const l = document.createElement("span"); l.className = "lbl"; l.textContent = "of these";
+      h.append(k, l);
+    }
+    if (parent) { const x = document.createElement("button"); x.className = "x"; x.textContent = "×"; x.style.marginLeft = "auto";
+      x.onclick = () => { parent.kids.splice(parent.kids.indexOf(node), 1); fixK(parent); changed(); }; h.appendChild(x); }
+    g.appendChild(h);
+    node.kids.forEach((c) => g.appendChild(c.op === "var" ? leafEl(c, node) : groupEl(c, node)));
+    const b = document.createElement("div"); b.className = "gbtns";
+    const ac = document.createElement("button"); ac.className = "add"; ac.textContent = "+ Condition";
+    ac.onclick = () => { node.kids.push(V(0)); changed(); };
+    const ag = document.createElement("button"); ag.className = "add"; ag.textContent = "+ Group";
+    ag.onclick = () => { node.kids.push({ op: "any", kids: [V(0)] }); changed(); };
+    b.append(ac, ag); g.appendChild(b);
+    return g;
+  }
+  function leafEl(node, parent) {
+    const r = document.createElement("div"); r.className = "leaf";
+    const s1 = document.createElement("select");
+    [["0", "is true"], ["1", "is false"]].forEach(([v, t]) => { const o = document.createElement("option"); o.value = v; o.textContent = t; s1.appendChild(o); });
+    s1.value = node.neg ? "1" : "0"; s1.onchange = () => { node.neg = s1.value === "1"; changed(); };
+    const s2 = document.createElement("select");
+    state.names.forEach((n, i) => { const o = document.createElement("option"); o.value = i; o.textContent = n; s2.appendChild(o); });
+    s2.value = node.v; s2.onchange = () => { node.v = parseInt(s2.value, 10); changed(); };
+    const x = document.createElement("button"); x.className = "x"; x.textContent = "×";
+    x.onclick = () => { parent.kids.splice(parent.kids.indexOf(node), 1); fixK(parent); changed(); };
+    r.append(s2, s1, x); // condition first reads naturally: "Signer 1 approved — is true"
+    return r;
+  }
+  function fixK(n) { if (n.op === "atleast") n.k = Math.min(n.k, n.kids.length); }
+  function changed() { markCustom(); renderRule(); refresh(); }
+
+  /* test */
+  function renderTest() {
+    const box = $("toggles"); box.innerHTML = "";
+    state.names.forEach((n, i) => {
+      const t = document.createElement("div"); t.className = "tg" + (facts[i] ? " on" : "");
+      t.innerHTML = `<span></span><div class="sw"></div>`; t.firstChild.textContent = n;
+      t.onclick = () => { facts[i] ^= 1; renderTest(); showVerdict(); };
+      box.appendChild(t);
+    });
+    showVerdict();
+  }
+  function showVerdict() {
+    if (!compiled) return;
+    const n = state.names.length, out = simulate(parseNetlist(compiled.hex), n, 1, facts)[0];
+    const v = $("verdict"); const prev = v.dataset.o; v.dataset.o = out; v.className = "verdict " + (out ? "allow" : "deny"); if (prev != null && prev != String(out)) { void v.offsetWidth; v.classList.add("pop"); }
+    v.innerHTML = (out ? "✅ ALLOW" : "⛔ DENY") + "<small>answer computed by the chip itself</small>";
+    const live = window.HL.liveChip ? window.HL.liveChip() : null;
+    $("call").textContent = `eval(${live ? live.id : "chipId"}, ${evalBytes(facts)}) → 0x0${out}`;
+    $("askLive").classList.toggle("hidden", !live); $("liveAns").classList.add("hidden");
+  }
+
+  /* compile + prove */
+  let timer = null;
+  function refresh(debounce = true) {
+    store.set("hl_state", state);
+    $("readout").innerHTML = "<b>ALLOW when</b> " + escapeHtml(describe(state.rule, state.names));
+    clearTimeout(timer);
+    timer = setTimeout(run, debounce ? 120 : 0);
+  }
+  function run() {
+    const n = state.names.length, t0 = performance.now();
+    compiled = compileRule(state.rule, n);
+    const p = (lastProof = prove(state.rule, n, compiled.hex)), ms = Math.max(1, Math.round(performance.now() - t0));
+    countTo($("sGates"), compiled.gates); countTo($("sBytes"), compiled.bytes); countTo($("sCases"), p.total);
+    const bar = $("scanBar"); bar.style.transition = "none"; bar.style.width = "0"; void bar.offsetWidth; bar.style.transition = ""; bar.style.width = p.ok ? "100%" : "40%"; bar.style.background = p.ok ? "" : "var(--deny)";
+    const pr = $("proof");
+    if (p.ok) {
+      pr.className = "proof ok";
+      pr.innerHTML = `<span style="font-size:22px">🛡</span><div>Proven correct in all ${p.total.toLocaleString()} cases<small>Every possible combination of conditions was run through the raw chip bytes and matched your rule. Allowed in ${p.allow.toLocaleString()}, denied in ${(p.total - p.allow).toLocaleString()}. Took ${ms} ms.</small></div>`;
+    } else {
+      pr.className = "proof bad";
+      pr.innerHTML = `<span style="font-size:22px">⚠️</span><div>Mismatch found<small>Facts ${escapeHtml(JSON.stringify(p.counterexample))}: rule says ${p.want}, chip says ${p.got}. This chip will not be minted.</small></div>`;
+    }
+    if (compiled.constOut != null) pr.innerHTML += `<div style="font-size:12px;font-weight:700;color:#b35a00;margin-top:6px">Heads up: this rule always gives ${compiled.constOut ? "ALLOW" : "DENY"}.</div>`;
+    $("hex").textContent = compiled.hex;
+    showVerdict();
+    clearTimeout(run.m); run.m = setTimeout(() => window.HL.renderMint && window.HL.renderMint(), 400);
+  }
+  $("copyHex").onclick = () => compiled && copy(compiled.hex, "Netlist copied");
+  function escapeHtml(s) { return s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+
+
+  /* ---- motion: hero circuit, marquee, reveals, counters ---- */
+  (function hero() {
+    const svg = $("heroSvg"), NS = "http://www.w3.org/2000/svg";
+    const mk = (t, a, p = svg) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); p.appendChild(e); return e; };
+    const defs = mk("defs", {});
+    const grad = mk("radialGradient", { id: "hg" }, defs);
+    mk("stop", { offset: "0", "stop-color": "#B8F94A", "stop-opacity": ".55" }, grad);
+    mk("stop", { offset: "1", "stop-color": "#B8F94A", "stop-opacity": "0" }, grad);
+    for (let x = 0; x <= 400; x += 20) mk("line", { x1: x, y1: 0, x2: x, y2: 220, stroke: "#141414", "stroke-width": 1 });
+    for (let y = 0; y <= 220; y += 20) mk("line", { x1: 0, y1: y, x2: 400, y2: y, stroke: "#141414", "stroke-width": 1 });
+    const cx = 200, cy = 110, w = 104, h = 70;
+    const traces = [];
+    [-24, -8, 8, 24].forEach((dy, i) => {
+      traces.push(`M0,${cy + dy * 2.6} H${60 + i * 12} V${cy + dy} H${cx - w / 2}`);
+      traces.push(`M400,${cy + dy * 2.6} H${340 - i * 12} V${cy + dy} H${cx + w / 2}`);
+    });
+    [-30, -10, 10, 30].forEach((dx, i) => {
+      traces.push(`M${cx + dx * 3},0 V${30 + i * 6} H${cx + dx} V${cy - h / 2}`);
+      traces.push(`M${cx + dx * 3},220 V${190 - i * 6} H${cx + dx} V${cy + h / 2}`);
+    });
+    traces.forEach((d, i) => {
+      mk("path", { d, fill: "none", stroke: "#2a2a2a", "stroke-width": 1.6 });
+      const f = mk("path", { d, fill: "none", stroke: "#B8F94A", "stroke-width": 2, "stroke-linecap": "round", class: "flow" });
+      f.style.animationDelay = (-(i * 0.41) % 3.2) + "s";
+      f.style.animationDuration = (2.6 + (i % 4) * 0.35) + "s";
+    });
+    mk("ellipse", { cx, cy, rx: 110, ry: 80, fill: "url(#hg)", class: "chipglow" });
+    mk("rect", { x: cx - w / 2, y: cy - h / 2, width: w, height: h, rx: 12, fill: "#0b0b0b", stroke: "#fff", "stroke-width": 1.6 });
+    mk("rect", { x: cx - w / 2 + 8, y: cy - h / 2 + 8, width: w - 16, height: h - 16, rx: 7, fill: "none", stroke: "#2c2c2c" });
+    const t1 = mk("text", { x: cx, y: cy - 3, "text-anchor": "middle", fill: "#8a8a8a", "font-size": 8.5, "font-weight": 700, "letter-spacing": "2", "font-family": "JetBrains Mono, monospace" });
+    t1.textContent = "HARDLINE CHIP";
+    const t2 = mk("text", { x: cx, y: cy + 16, "text-anchor": "middle", fill: "#B8F94A", "font-size": 15, "font-weight": 800, "font-family": "Inter Tight, sans-serif" });
+    let a = true; t2.textContent = "ALLOW";
+    setInterval(() => { a = !a; t2.textContent = a ? "ALLOW" : "DENY"; t2.setAttribute("fill", a ? "#B8F94A" : "#FF5A4E"); }, 1800);
+  })();
+  (function marquee() {
+    const items = ["<b>●</b> Compiled to real logic gates", "<b>●</b> Proven for every case", "<b>●</b> Minted on X Layer", "<b>●</b> Powered by TapeOut", "<b>●</b> Nobody can edit it", "<b>●</b> Any contract can call it"];
+    const html = items.map((t) => `<span>${t}</span>`).join("");
+    $("marq").innerHTML = html + html;
+  })();
+  const io = "IntersectionObserver" in window ? new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }), { threshold: 0.12 }) : null;
+  document.querySelectorAll(".card,.hero").forEach((el) => { if (io) { el.classList.add("reveal"); io.observe(el); } });
+  function countTo(el, to) {
+    const from = parseInt(el.dataset.v || "0", 10); el.dataset.v = to;
+    if (from === to) { el.textContent = to.toLocaleString(); return; }
+    const t0 = performance.now(), d = 500;
+    const step = (t) => { const k = Math.min(1, (t - t0) / d), e = 1 - Math.pow(1 - k, 3); el.textContent = Math.round(from + (to - from) * e).toLocaleString(); if (k < 1) requestAnimationFrame(step); };
+    requestAnimationFrame(step);
+  }
+
+  $("askLive").onclick = async () => {
+    const a = $("liveAns"); a.classList.remove("hidden"); a.textContent = "Asking chip on X Layer…";
+    try { const r = await window.HL.askLive(); a.innerHTML = r ? `Live chip #${r.id} says: <b style="color:${r.out ? "var(--allow)" : "var(--deny)"}">${r.out ? "ALLOW" : "DENY"}</b>` : "No live chip for this rule yet."; }
+    catch (e) { a.textContent = "Couldn't reach X Layer: " + (e.message || e); }
+  };
+  window.HL.onUpdate = () => showVerdict();
+  function renderAll() { renderTpl(); renderConds(); renderRule(); renderTest(); refresh(false); }
+  renderAll();
+})();
+</script>
+<script>
+/*MINT*/
+</script>
+</body>
+</html>
