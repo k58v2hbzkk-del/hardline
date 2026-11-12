@@ -793,8 +793,16 @@ if (typeof module !== "undefined") module.exports = { XL, SEL, Abi, okb, errText
         <span>Buy ${need} gate${need === 1n ? "" : "s"}</span><span>${okb(mintCost)} OKB</span>
         <span>Tape-out fee</span><span>${okb(tfee)} OKB</span>
         <span><b>Total</b></span><span><b>${okb(total)} OKB</b> + gas</span></div>`;
-      B.textContent = `Mint this chip · ${okb(total)} OKB`; B.classList.remove("hidden");
-      B.onclick = () => mintChip({ pr, price, pfee, tfee, need });
+      const already = store.get("hl_chips", []).find((ch) => ch.hex === S.compiled.hex && ch.circuits === pr.circuits);
+      if (already) {
+        C.innerHTML += `<div class="note" style="margin-top:10px">✅ This exact rule is already live as <b>Chip #${esc(already.id)}</b>. Change the rule to mint a new chip.</div>`;
+        B.textContent = `Mint another copy · ${okb(total)} OKB`; B.classList.remove("hidden"); B.className = "btn ghost";
+        B.onclick = () => { if (confirm(`This rule is already Chip #${already.id}. Mint a second copy for ${okb(total)} OKB?`)) mintChip({ pr, price, pfee, tfee, need }); };
+      } else {
+        B.className = "btn primary";
+        B.textContent = `Mint this chip · ${okb(total)} OKB`; B.classList.remove("hidden");
+        B.onclick = () => mintChip({ pr, price, pfee, tfee, need });
+      }
     } catch (e) { log("⛔ Couldn't read this processor's prices: " + esc(errText(e)), "bad"); }
   }
 
@@ -893,7 +901,7 @@ if (typeof module !== "undefined") module.exports = { XL, SEL, Abi, okb, errText
       saveChip(chip); renderChips();
       const n = await verifyChip(chip, (m) => (st.innerHTML = esc(m)));
       st.innerHTML = `✅ Chip #${esc(raw)} added and verified live (${n} onchain checks)`;
-      window.HL.onUpdate();
+      renderChips(); window.HL.onUpdate(); render();
     } catch (e) { st.innerHTML = "⛔ " + esc(errText(e)); }
   }
 
