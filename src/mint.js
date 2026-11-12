@@ -108,22 +108,51 @@
       const r2 = await Chain.send(pr.circuits, TapeOut.tapeoutData(c.hex, nIn, 1), tfee, (s, h) => (st2.innerHTML = `Step 2/3 · ${esc(s)} ${h ? txLink(h) : ""}`));
       const id = TapeOut.idFromReceipt(r2.receipt, pr.circuits) ?? Abi.uint(r2.sim);
       st2.innerHTML = `✅ Step 2/3 · Chip #${id} is onchain ${txLink(r2.hash)}`;
+      const chip = { id: id.toString(), circuits: pr.circuits, tx: r2.hash, hex: c.hex, nIn, names: S.state.names.slice(), rule: JSON.parse(JSON.stringify(S.state.rule)), gates: c.gates, t: Date.now() };
+      saveChip(chip); renderChips();
       const st3 = log("Step 3/3 · Checking the live chip against your rule…");
-      const info = await TapeOut.info(pr.circuits, id);
-      if (info.nIn !== nIn || info.nOut !== 1 || info.gates !== c.gates) throw new Error(`Onchain shape mismatch: ${JSON.stringify(info)}`);
-      const vecs = sampleVectors(nIn, S.facts);
-      for (const bits of vecs) {
-        const got = await TapeOut.evalOnchain(pr.circuits, id, evalBytes(bits));
-        const want = evalRule(S.state.rule, bits);
-        if (parseInt(got.slice(2, 4) || "0", 16) !== want) throw new Error(`Chip answered ${got} for ${evalBytes(bits)}, rule says ${want}`);
-      }
-      st3.innerHTML = `✅ Step 3/3 · Live chip matches your rule (${vecs.length} onchain checks + ${S.proof.total.toLocaleString()} offline)`;
-      const chips = store.get("hl_chips", []);
-      chips.unshift({ id: id.toString(), circuits: pr.circuits, tx: r2.hash, hex: c.hex, names: S.state.names, rule: S.state.rule, gates: c.gates, t: Date.now() });
-      store.set("hl_chips", chips.slice(0, 30));
+      const n = await verifyChip(chip, (msg) => (st3.innerHTML = "Step 3/3 · " + esc(msg)));
+      st3.innerHTML = `✅ Step 3/3 · Live chip matches your rule (${n} onchain checks + ${S.proof.total.toLocaleString()} offline)`;
       log(`<b>🎉 Chip #${id} is live.</b> Any contract can now call <code>eval(${id}, facts)</code> on ${short(pr.circuits)}.`, "ok");
     } catch (e) { err(e); }
     busy = false; render(); renderChips(); window.HL.onUpdate();
+  }
+
+  function saveChip(chip) {
+    const chips = store.get("hl_chips", []).filter((x) => !(x.id === chip.id && x.circuits === chip.circuits));
+    chips.unshift(chip); store.set("hl_chips", chips.slice(0, 30));
+  }
+  // Waits for the network to catch up, then checks shape + several eval answers against the rule.
+  async function verifyChip(chip, onMsg) {
+    const id = BigInt(chip.id); let info = null, lastErr = null;
+    for (let i = 0; i < 20 && !info; i++) {
+      try { info = await TapeOut.info(chip.circuits, id); }
+      catch (e) { lastErr = e; onMsg && onMsg(`waiting for X Layer to index chip #${chip.id}… (${i + 1})`); await new Promise((r) => setTimeout(r, 2000)); }
+    }
+    if (!info) throw lastErr || new Error("Chip not found");
+    if (info.nIn !== chip.nIn || info.nOut !== 1 || info.gates !== chip.gates) throw new Error(`Onchain shape mismatch: ${JSON.stringify(info)}`);
+    const vecs = sampleVectors(chip.nIn, window.HL.get().facts.length === chip.nIn ? window.HL.get().facts : Array(chip.nIn).fill(0));
+    for (const bits of vecs) {
+      const got = await TapeOut.evalOnchain(chip.circuits, id, evalBytes(bits));
+      const want = evalRule(chip.rule, bits);
+      if (parseInt(got.slice(2, 4) || "0", 16) !== want) throw new Error(`Chip answered ${got} for ${evalBytes(bits)}, rule says ${want}`);
+    }
+    chip.verified = true; saveChip(chip);
+    return vecs.length;
+  }
+  async function importChip() {
+    const pr = proc(), S = window.HL.get(), raw = ($("importId").value || "").trim().replace("#", "");
+    if (!pr || !/^\d+$/.test(raw)) return;
+    const st = log(`Looking up chip #${raw}…`);
+    try {
+      const nl = await TapeOut.netlistOf(pr.circuits, BigInt(raw));
+      if (nl.toLowerCase() !== S.compiled.hex.toLowerCase()) { st.innerHTML = `⛔ Chip #${esc(raw)} exists but isn't this rule. Load the rule you minted it from, then try again.`; return; }
+      const chip = { id: raw, circuits: pr.circuits, tx: "", hex: S.compiled.hex, nIn: S.state.names.length, names: S.state.names.slice(), rule: JSON.parse(JSON.stringify(S.state.rule)), gates: S.compiled.gates, t: Date.now() };
+      saveChip(chip); renderChips();
+      const n = await verifyChip(chip, (m) => (st.innerHTML = esc(m)));
+      st.innerHTML = `✅ Chip #${esc(raw)} added and verified live (${n} onchain checks)`;
+      window.HL.onUpdate();
+    } catch (e) { st.innerHTML = "⛔ " + esc(errText(e)); }
   }
 
   function sampleVectors(n, facts) {
@@ -134,9 +163,17 @@
 
   function renderChips() {
     const chips = store.get("hl_chips", []), box = $("myChips");
-    if (!chips.length) { box.innerHTML = ""; return; }
-    box.innerHTML = `<div class="tag" style="margin-top:14px">Your chips</div>` + chips.map((ch) =>
-      `<div class="chipRow"><b>Chip #${esc(ch.id)}</b><span class="muted">${ch.gates} gates · ${ch.names.length} conditions</span>${txLink(ch.tx)}</div>`).join("");
+    let html = `<div class="tag" style="margin-top:14px">Your chips</div>`;
+    html += chips.map((ch, i) => `<div class="chipRow"><b>Chip #${esc(ch.id)}</b><span class="muted">${ch.gates} gates · ${ch.names.length} conditions · ${ch.verified ? "✅ verified live" : "not verified yet"}</span>${ch.tx ? txLink(ch.tx) : ""}<button class="add" data-v="${i}">Verify live</button></div>`).join("");
+    html += `<div class="row" style="margin-top:10px"><input type="text" id="importId" placeholder="Chip number, e.g. 2" inputmode="numeric" style="flex:1"><button class="add" id="importBtn">Add chip</button></div>`;
+    box.innerHTML = html;
+    $("importBtn").onclick = importChip;
+    box.querySelectorAll("[data-v]").forEach((b) => (b.onclick = async () => {
+      const ch = chips[+b.dataset.v]; const st = log(`Verifying chip #${esc(ch.id)}…`);
+      try { const n = await verifyChip(ch, (m) => (st.innerHTML = esc(m))); st.innerHTML = `✅ Chip #${esc(ch.id)} matches its rule (${n} onchain checks)`; }
+      catch (e) { st.innerHTML = "⛔ " + esc(errText(e)); }
+      renderChips();
+    }));
   }
 
   // Live check from the Test step: ask the minted chip itself

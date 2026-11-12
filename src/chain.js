@@ -20,7 +20,7 @@ const XL = {
 const SEL = {
   createCPU: "47f9b5fd", deployFee: "eb2a5d2c", cpuCount: "a94da8a7", cpuAt: "4bc7cbbd",
   mint: "1b2ef1ca", mintPrice: "6817c76c", protocolFee: "b0e21e8a", balanceOf: "00fdd58e",
-  tapeout: "7bd3ac1d", tapeFee: "adfb2b69", eval: "934d06ea", circuitInfo: "084d60f1", ownerOf: "6352211e",
+  tapeout: "7bd3ac1d", tapeFee: "adfb2b69", eval: "934d06ea", circuitInfo: "084d60f1", ownerOf: "6352211e", netlist: "3fc4be56",
 };
 const TAPEDOUT_TOPIC = "0xc11215e417669c143c8a07aeb778034c0a0a85ebdf305d64a629b19a7a9ce031";
 
@@ -64,7 +64,11 @@ const Chain = {
     }
     throw last || new Error("RPC unreachable");
   },
-  call(to, data, from, value) { const tx = { to, data }; if (from) tx.from = from; if (value != null) tx.value = "0x" + BigInt(value).toString(16); return Chain.rpc("eth_call", [tx, "latest"]); },
+  async call(to, data, from, value) {
+    const tx = { to, data }; if (from) tx.from = from; if (value != null) tx.value = "0x" + BigInt(value).toString(16);
+    try { return await Chain.rpc("eth_call", [tx, "latest"]); }
+    catch (e) { if (!Chain.account || from) throw e; try { return await Chain.publicRpc("eth_call", [tx, "latest"]); } catch (e2) { throw e; } }
+  },
   account: null,
   async connect() {
     const p = Chain.provider(); if (!p) throw new Error("NO_WALLET");
@@ -126,6 +130,7 @@ const TapeOut = {
   tapeoutData: (hex, nIn, nOut) => Abi.encode(SEL.tapeout, ["bytes", "uint", "uint"], [hex, nIn, nOut]),
   evalOnchain: async (c, id, inputHex) => Abi.bytes(await Chain.call(c, Abi.encode(SEL.eval, ["uint", "bytes"], [id, inputHex]))),
   info: async (c, id) => { const r = await Chain.call(c, Abi.encode(SEL.circuitInfo, ["uint"], [id])); return { nIn: Number(Abi.uint(r, 0)), nOut: Number(Abi.uint(r, 1)), nState: Number(Abi.uint(r, 2)), gates: Number(Abi.uint(r, 3)) }; },
+  netlistOf: async (c, id) => Abi.bytes(await Chain.call(c, Abi.encode(SEL.netlist, ["uint"], [id]))),
   idFromReceipt(receipt, circuits) {
     const log = (receipt.logs || []).find((l) => l.address.toLowerCase() === circuits.toLowerCase() && l.topics[0] === TAPEDOUT_TOPIC);
     return log ? BigInt(log.topics[1]) : null;
