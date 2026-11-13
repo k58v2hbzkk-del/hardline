@@ -14,6 +14,12 @@ Built for **X Layer TapeOut Accelerate** (Build X Series).
 4. **Mint** — `src/chain.js` + `src/mint.js` (no external libraries): create the Hardline processor once via the TapeOut factory, buy NAND units, `tapeout(nl, nIn, 1)`. Every transaction is simulated, gas-estimated and balance-checked before the wallet is asked to sign.
 5. **Verify live** — after tape-out the page reads `circuitInfo` and calls `eval` on the live chip with several input vectors and checks each answer against the rule.
 
+## Demo vault (Step 06)
+
+`contracts/HardlineVault.sol` holds OKB and never decides on its own. For each payment it builds the facts from onchain state (bits 0–4: signer slots that approved, bit 5: frozen), calls `eval(chipId, facts)` on the TapeOut circuits contract and only transfers on ALLOW. A DENY emits `Blocked` and nothing moves. No owner, no upgrade, no admin withdrawal. Deployed from the site in one transaction; in the demo all five signer slots and the freeze switch belong to the deployer so one wallet can play every role.
+
+Tests (`node test/vault.test.js`, local chain with a netlist-simulating mock): all 64 fact combinations match the rule; 2 approvals → Blocked; 3 approvals + frozen → Blocked; 3 approvals → Released; no double execute; strangers can't approve, freeze or propose.
+
 ## TapeOut usage (X Layer, chain 196)
 
 | Contract | Address / call |

@@ -123,6 +123,10 @@
   .lg{padding:4px 0;font-family:"Inter Tight",sans-serif;font-size:13.5px;line-height:1.5}
   .lg.bad{color:var(--deny)}
   .chipRow{display:flex;gap:10px;align-items:center;justify-content:space-between;border:1px solid var(--line);background:#111;border-radius:12px;padding:10px 12px;margin-top:8px;font-size:13.5px;flex-wrap:wrap}
+  .slots{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:10px}
+  .slot{border:1px solid #2e2e2e;background:#111;color:#ddd;border-radius:12px;padding:12px 4px;font:700 12.5px "Inter Tight",sans-serif;cursor:pointer}
+  .slot.on{background:var(--allow);color:#000;border-color:var(--allow)}
+  .slot:disabled{cursor:default}
   .liveAns{margin-top:10px;font-weight:700;font-size:14.5px;text-align:center}
   #askLive{margin-top:10px}
   @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.reveal{opacity:1;transform:none}}
@@ -196,6 +200,12 @@
     <button class="btn primary hidden" id="mintBtn" style="margin-top:12px"></button>
     <div class="mono hidden" id="mintLog"></div>
     <div id="myChips"></div>
+  </div>
+  <div class="card" id="vaultCard">
+    <span class="tag">Step 06</span><div class="ch"><h2>Demo vault</h2><small>real money, chip-controlled</small></div>
+    <p class="hint">A vault on X Layer that holds OKB. It never decides by itself: before any payment it builds the facts from onchain state (who approved, is it frozen) and asks the chip. Only <b>ALLOW</b> moves money.</p>
+    <div id="vaultBody"></div>
+    <div class="mono hidden" id="vaultLog"></div>
   </div>
 
   <footer><span>Built on <b>TapeOut</b> · <b>X Layer</b></span><span>by <b>Tajudeen</b> · @Tajudeen</span></footer>
@@ -438,6 +448,12 @@
 </script>
 <script>
 /*MINT*/
+</script>
+<script>
+/*VAULTBC*/
+</script>
+<script>
+/*VAULT*/
 </script>
 </body>
 </html>
